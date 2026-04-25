@@ -219,13 +219,23 @@ class Clasificados_Rewrite {
 
 			if ( $is_invalid ) {
 				// Si pasaron una ciudad/distrito/categoría que no existe en la BD, forzar 404.
-				// Esto evita falsos positivos donde WP ignora el filtro fallido y muestra toda la lista.
+				// Usar post__in vacío garantiza que la consulta devuelva cero resultados en caso
+				// de que el set_404() sea evadido por parámetros genéricos como post_type.
 				$query->set_404();
+				$query->set( 'post__in', array( 0 ) );
 				return;
 			}
 
+			// Si hay al menos un filtro de taxonomía, forzamos aplicarlo
 			if ( count( $tax_query ) > 1 ) {
 				$query->set( 'tax_query', $tax_query );
+			} else {
+				// Si por alguna razón pasó validaciones pero no hay filtros,
+				// asegurarnos de que la consulta no devuelva todo el universo.
+				if ( $cat || $ciudad || $distrito ) {
+					$query->set_404();
+					$query->set( 'post__in', array( 0 ) );
+				}
 			}
 		}
 	}
