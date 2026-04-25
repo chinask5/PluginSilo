@@ -24,6 +24,7 @@ require_once CLASIFICADOS_DIR . 'modules/class-rewrite.php';
 require_once CLASIFICADOS_DIR . 'modules/class-seo.php';
 require_once CLASIFICADOS_DIR . 'modules/class-admin.php';
 require_once CLASIFICADOS_DIR . 'modules/class-acf.php';
+require_once CLASIFICADOS_DIR . 'modules/class-search.php';
 
 // Includes Template Loader
 require_once CLASIFICADOS_DIR . 'includes/class-template-loader.php';
@@ -65,6 +66,7 @@ class Clasificados_Plugin {
 		}
 
 		new Clasificados_ACF();
+		new Clasificados_Search();
 
 		// Inicializar Cargador de Plantillas
 		new Clasificados_Template_Loader();
