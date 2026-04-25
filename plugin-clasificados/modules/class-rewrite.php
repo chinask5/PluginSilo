@@ -37,9 +37,10 @@ class Clasificados_Rewrite {
 
 	public function limpiar_transients() {
 		delete_transient( 'clasificados_cats_regex' );
-		// No hacemos flush_rewrite_rules aquí para evitar problemas de rendimiento
-		// durante importaciones masivas. El flush debe hacerse manualmente
-		// desde el panel de administración.
+
+		// Reactivamos el flush automático a petición del usuario para facilitar
+		// el flujo de trabajo manual sin tener que ir a los ajustes cada vez.
+		flush_rewrite_rules();
 	}
 
 	private function obtener_regex_categorias() {
@@ -94,16 +95,26 @@ class Clasificados_Rewrite {
 		$slugs_regex = $this->obtener_regex_categorias();
 
 		if ( $slugs_regex ) {
-			// Reglas con paginación incluidas
+			// Las reglas deben priorizar aquellas que eviten solapamientos.
+			// Si la URL es mascotas/gatos, podría coincidir con /{categoria}/{ciudad} (cat:mascotas, ciudad:gatos)
+			// PERO si mascotas/gatos es una categoría válida, debe atraparla.
+			// Al estar las categorías listadas de mayor a menor longitud en $slugs_regex,
+			// WP regex Engine evaluará "mascotas/gatos" completo antes que "mascotas".
 
-			// 1. /{categoria}/{ciudad}/{distrito}/page/2/
+			// Sin embargo, hay un detalle con la precedencia de add_rewrite_rule usando 'top':
+			// WordPress hace "prepend" de estas reglas en su array interno.
+			// Esto significa que LA ÚLTIMA regla que definamos aquí será LA PRIMERA en evaluarse.
+			// Queremos que las rutas más precisas e íntegras (subcategoría completa) se evalúen antes
+			// que las reglas que intentan dividir el final de la URL asumiendo que es una ciudad.
+
+			// 1. /{categoria}/{ciudad}/{distrito}/page/2/ (Más específica)
 			add_rewrite_rule(
 				'^(' . $slugs_regex . ')/([^/]+)/([^/]+)/page/([0-9]{1,})/?$',
 				'index.php?post_type=anuncio&clasificados_cat=$matches[1]&clasificados_ciudad=$matches[2]&clasificados_distrito=$matches[3]&paged=$matches[4]',
 				'top'
 			);
 
-			// 2. /{categoria}/{ciudad}/{distrito}/
+			// 2. /{categoria}/{ciudad}/{distrito}/ (Más específica)
 			add_rewrite_rule(
 				'^(' . $slugs_regex . ')/([^/]+)/([^/]+)/?$',
 				'index.php?post_type=anuncio&clasificados_cat=$matches[1]&clasificados_ciudad=$matches[2]&clasificados_distrito=$matches[3]',
@@ -118,13 +129,16 @@ class Clasificados_Rewrite {
 			);
 
 			// 4. /{categoria}/{ciudad}/
+			// Usamos (?!page) para asegurar que no atrape URLs de paginación
 			add_rewrite_rule(
-				'^(' . $slugs_regex . ')/([^/]+)/?$',
+				'^(' . $slugs_regex . ')/(?!page)([^/]+)/?$',
 				'index.php?post_type=anuncio&clasificados_cat=$matches[1]&clasificados_ciudad=$matches[2]',
 				'top'
 			);
 
 			// 5. /{categoria}/page/2/
+			// Como se define DESPUÉS de {categoria}/{ciudad}/, en el array final estará ARRIBA,
+			// priorizando que si "mascotas/gatos/page/2" es una categoría completa, se atrape aquí primero.
 			add_rewrite_rule(
 				'^(' . $slugs_regex . ')/page/([0-9]{1,})/?$',
 				'index.php?post_type=anuncio&clasificados_cat=$matches[1]&paged=$matches[2]',
@@ -132,6 +146,8 @@ class Clasificados_Rewrite {
 			);
 
 			// 6. /{categoria}/
+			// Como se define de último, será la PRIMERA regla evaluada por WordPress.
+			// Así "mascotas/gatos" entra perfecto aquí y no cae en la regla #4 por error.
 			add_rewrite_rule(
 				'^(' . $slugs_regex . ')/?$',
 				'index.php?post_type=anuncio&clasificados_cat=$matches[1]',
