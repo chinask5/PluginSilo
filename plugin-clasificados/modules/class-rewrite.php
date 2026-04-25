@@ -129,17 +129,11 @@ class Clasificados_Rewrite {
 				);
 			}
 
-			// Para evitar que distritos de ciudades diferentes con el mismo slug se mezclen
-			// Forzamos que coincida tanto ciudad como distrito si ambos están presentes
-			if ( $ciudad && $distrito ) {
-				$tax_query[] = array(
-					'taxonomy' => 'ubicacion',
-					'field'    => 'slug',
-					'terms'    => array( $ciudad, $distrito ),
-					'operator' => 'AND'
-				);
-				// Un post debe estar asignado a ambos terminos (ciudad y distrito)
-			} elseif ( $distrito ) {
+			// Si hay distrito, filtramos primariamente por el distrito.
+			// En la interfaz de WP es común que solo se marque el término hijo (San Borja)
+			// y no el término padre (Lima). Si forzamos un AND, el anuncio no aparecerá
+			// a menos que el usuario marque ambos checkboxes manualmente.
+			if ( $distrito ) {
 				$tax_query[] = array(
 					'taxonomy' => 'ubicacion',
 					'field'    => 'slug',
