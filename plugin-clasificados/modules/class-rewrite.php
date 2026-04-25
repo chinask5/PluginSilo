@@ -38,6 +38,10 @@ class Clasificados_Rewrite {
 	public function limpiar_transients() {
 		delete_transient( 'clasificados_cats_regex' );
 
+		// Forzamos la regeneración del regex y lo guardamos ANTES de hacer el flush.
+		// Esto asegura que flush_rewrite_rules() lea el regex con las nuevas subcategorías.
+		$this->obtener_regex_categorias();
+
 		// Reactivamos el flush automático a petición del usuario para facilitar
 		// el flujo de trabajo manual sin tener que ir a los ajustes cada vez.
 		flush_rewrite_rules();
@@ -167,6 +171,7 @@ class Clasificados_Rewrite {
 
 		if ( $cat || $ciudad || $distrito ) {
 			$tax_query = array( 'relation' => 'AND' );
+			$is_invalid = false; // Bandera para forzar 404 si un slug no existe
 
 			if ( $cat ) {
 				// $cat puede venir como 'vehiculos/autopartes'
@@ -182,6 +187,8 @@ class Clasificados_Rewrite {
 						'field'    => 'term_id',
 						'terms'    => $term_cat->term_id,
 					);
+				} else {
+					$is_invalid = true;
 				}
 			}
 
@@ -194,6 +201,8 @@ class Clasificados_Rewrite {
 						'field'    => 'term_id',
 						'terms'    => $term_dist->term_id,
 					);
+				} else {
+					$is_invalid = true;
 				}
 			} elseif ( $ciudad ) {
 				$term_ciu = get_term_by( 'slug', $ciudad, 'ubicacion' );
@@ -203,7 +212,16 @@ class Clasificados_Rewrite {
 						'field'    => 'term_id',
 						'terms'    => $term_ciu->term_id,
 					);
+				} else {
+					$is_invalid = true;
 				}
+			}
+
+			if ( $is_invalid ) {
+				// Si pasaron una ciudad/distrito/categoría que no existe en la BD, forzar 404.
+				// Esto evita falsos positivos donde WP ignora el filtro fallido y muestra toda la lista.
+				$query->set_404();
+				return;
 			}
 
 			if ( count( $tax_query ) > 1 ) {
