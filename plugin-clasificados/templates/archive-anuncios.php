@@ -49,15 +49,40 @@ get_header(); ?>
 						<?php endif; ?>
 
 						<header class="entry-header">
-							<?php the_title( '<h2 class="entry-title" style="font-size: 1.2em;"><a href="' . esc_url( get_permalink() ) . '" rel="bookmark">', '</a></h2>' ); ?>
+							<?php
+							$precio = get_field( 'precio' );
+							if ( $precio ) {
+								echo '<div style="font-weight: bold; color: #2e7d32; font-size: 1.1em; margin-bottom: 5px;">$' . esc_html( number_format( $precio, 2 ) ) . '</div>';
+							}
+							the_title( '<h2 class="entry-title" style="font-size: 1.2em; margin: 0 0 10px 0;"><a href="' . esc_url( get_permalink() ) . '" rel="bookmark" style="text-decoration: none; color: #333;">', '</a></h2>' );
+							?>
 						</header><!-- .entry-header -->
 
-						<div class="entry-summary">
-							<?php the_excerpt(); ?>
+						<div class="entry-summary" style="font-size: 0.9em; color: #666; margin-bottom: 15px;">
+							<?php
+							// Si es vehículo, mostrar resumen rápido
+							if ( has_term( 'vehiculos', 'categoria_anuncio' ) ) {
+								$ano = get_field( 'ano_fabricacion' );
+								$kilometraje = get_field( 'kilometraje' );
+								$transmision = get_field( 'transmision' );
+
+								$detalles = array();
+								if ( $ano ) $detalles[] = $ano;
+								if ( $kilometraje ) $detalles[] = number_format($kilometraje) . ' Km';
+								if ( $transmision ) $detalles[] = $transmision;
+
+								if ( !empty($detalles) ) {
+									echo '<p style="margin:0 0 10px 0;">' . esc_html( implode( ' • ', $detalles ) ) . '</p>';
+								}
+							}
+
+							// Mostrar extracto corto
+							echo wp_trim_words( get_the_excerpt(), 15, '...' );
+							?>
 						</div><!-- .entry-summary -->
 
-						<footer class="entry-footer">
-							<a href="<?php the_permalink(); ?>" class="button" style="display: inline-block; padding: 5px 10px; background: #0073aa; color: #fff; text-decoration: none; border-radius: 3px;">Ver detalles</a>
+						<footer class="entry-footer" style="margin-top: auto;">
+							<a href="<?php the_permalink(); ?>" class="button" style="display: block; text-align: center; padding: 8px 10px; background: #0073aa; color: #fff; text-decoration: none; border-radius: 3px;">Ver detalles</a>
 						</footer><!-- .entry-footer -->
 					</article><!-- #post-<?php the_ID(); ?> -->
 					<?php
