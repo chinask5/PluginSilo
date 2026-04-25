@@ -173,29 +173,37 @@ class Clasificados_Rewrite {
 				$cat_parts = explode( '/', $cat );
 				$final_cat_slug = end( $cat_parts );
 
-				$tax_query[] = array(
-					'taxonomy' => 'categoria_anuncio',
-					'field'    => 'slug',
-					'terms'    => $final_cat_slug,
-				);
+				// Buscar el ID exacto del término para evitar bugs de resolución jerárquica con slugs
+				$term_cat = get_term_by( 'slug', $final_cat_slug, 'categoria_anuncio' );
+
+				if ( $term_cat ) {
+					$tax_query[] = array(
+						'taxonomy' => 'categoria_anuncio',
+						'field'    => 'term_id',
+						'terms'    => $term_cat->term_id,
+					);
+				}
 			}
 
 			// Si hay distrito, filtramos primariamente por el distrito.
-			// En la interfaz de WP es común que solo se marque el término hijo (San Borja)
-			// y no el término padre (Lima). Si forzamos un AND, el anuncio no aparecerá
-			// a menos que el usuario marque ambos checkboxes manualmente.
 			if ( $distrito ) {
-				$tax_query[] = array(
-					'taxonomy' => 'ubicacion',
-					'field'    => 'slug',
-					'terms'    => $distrito,
-				);
+				$term_dist = get_term_by( 'slug', $distrito, 'ubicacion' );
+				if ( $term_dist ) {
+					$tax_query[] = array(
+						'taxonomy' => 'ubicacion',
+						'field'    => 'term_id',
+						'terms'    => $term_dist->term_id,
+					);
+				}
 			} elseif ( $ciudad ) {
-				$tax_query[] = array(
-					'taxonomy' => 'ubicacion',
-					'field'    => 'slug',
-					'terms'    => $ciudad,
-				);
+				$term_ciu = get_term_by( 'slug', $ciudad, 'ubicacion' );
+				if ( $term_ciu ) {
+					$tax_query[] = array(
+						'taxonomy' => 'ubicacion',
+						'field'    => 'term_id',
+						'terms'    => $term_ciu->term_id,
+					);
+				}
 			}
 
 			if ( count( $tax_query ) > 1 ) {
