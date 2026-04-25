@@ -49,8 +49,36 @@ class Clasificados_Rewrite {
 			) );
 
 			if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
-				$slugs = wp_list_pluck( $terms, 'slug' );
-				$regex = implode( '|', $slugs );
+				$paths = array();
+				foreach ( $terms as $term ) {
+					$slugs = array();
+					$current = $term;
+					while ( $current ) {
+						array_unshift( $slugs, $current->slug );
+						if ( $current->parent ) {
+							$current = get_term( $current->parent, 'categoria_anuncio' );
+						} else {
+							break;
+						}
+					}
+					$paths[] = implode( '/', $slugs );
+				}
+
+				// Ordenar por longitud descendente para que las subcategorías (rutas largas)
+				// se evalúen antes que las categorías padre (rutas cortas) en el regex.
+				usort( $paths, function( $a, $b ) {
+					return strlen( $b ) - strlen( $a );
+				} );
+
+				// Escapar las barras para usarlas en Regex de WP
+				$escaped_paths = array_map( function( $path ) {
+					// No necesitamos usar preg_quote porque WP Rewrite Rules maneja strings literales bien,
+					// pero como esto irá dentro de (a|b), los paths con / funcionan de forma nativa.
+					return $path;
+				}, $paths );
+
+				$regex = implode( '|', $escaped_paths );
+
 				// Cache por 1 día (o hasta que se limpie manualmente en hooks)
 				set_transient( 'clasificados_cats_regex', $regex, DAY_IN_SECONDS );
 			}
@@ -122,10 +150,14 @@ class Clasificados_Rewrite {
 			$tax_query = array( 'relation' => 'AND' );
 
 			if ( $cat ) {
+				// $cat puede venir como 'vehiculos/autopartes'
+				$cat_parts = explode( '/', $cat );
+				$final_cat_slug = end( $cat_parts );
+
 				$tax_query[] = array(
 					'taxonomy' => 'categoria_anuncio',
 					'field'    => 'slug',
-					'terms'    => $cat,
+					'terms'    => $final_cat_slug,
 				);
 			}
 

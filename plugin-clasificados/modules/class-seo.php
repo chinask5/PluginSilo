@@ -34,7 +34,14 @@ class Clasificados_SEO {
 			return false;
 		}
 
-		$term_cat      = get_term_by( 'slug', $cat, 'categoria_anuncio' );
+		// Para subcategorías (ej: vehiculos/autopartes) extraemos el último slug
+		$final_cat_slug = $cat;
+		if ( $cat && strpos( $cat, '/' ) !== false ) {
+			$cat_parts = explode( '/', $cat );
+			$final_cat_slug = end( $cat_parts );
+		}
+
+		$term_cat      = get_term_by( 'slug', $final_cat_slug, 'categoria_anuncio' );
 		$term_ciudad   = get_term_by( 'slug', $ciudad, 'ubicacion' );
 		$term_distrito = get_term_by( 'slug', $distrito, 'ubicacion' );
 
@@ -43,7 +50,8 @@ class Clasificados_SEO {
 		$distrito_name = $term_distrito ? $term_distrito->name : '';
 
 		return array(
-			'cat_slug'      => $cat,
+			'cat_path'      => $cat, // Ruta completa: vehiculos/autopartes
+			'cat_slug'      => $final_cat_slug,
 			'ciudad_slug'   => $ciudad,
 			'distrito_slug' => $distrito,
 			'cat'           => $cat_name,
@@ -178,7 +186,8 @@ class Clasificados_SEO {
 
 		// Construir URL Base del Silo (Categoría)
 		if ( $data['cat'] ) {
-			$cat_url = $home_url . $data['cat_slug'] . '/';
+			// Usamos cat_path que contiene la ruta completa (ej: vehiculos/autopartes)
+			$cat_url = $home_url . $data['cat_path'] . '/';
 			$breadcrumbs .= '<li>&raquo;</li><li><a href="' . esc_url( $cat_url ) . '">' . esc_html( $data['cat'] ) . '</a></li>';
 
 			if ( $data['ciudad'] ) {
