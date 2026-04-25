@@ -19,6 +19,9 @@ class Clasificados_Rewrite {
 		// Interceptar la consulta principal para forzar variables
 		add_action( 'pre_get_posts', array( $this, 'modificar_consulta_principal' ) );
 
+		// Interceptar la generación de enlaces de términos para quitar la base
+		add_filter( 'term_link', array( $this, 'modificar_enlaces_terminos' ), 10, 3 );
+
 		// Limpiar transient cuando se crean, editan o eliminan categorías
 		add_action( 'create_categoria_anuncio', array( $this, 'limpiar_transients' ) );
 		add_action( 'edit_categoria_anuncio', array( $this, 'limpiar_transients' ) );
@@ -183,5 +186,26 @@ class Clasificados_Rewrite {
 				$query->set( 'tax_query', $tax_query );
 			}
 		}
+	}
+
+	public function modificar_enlaces_terminos( $url, $term, $taxonomy ) {
+		if ( 'categoria_anuncio' === $taxonomy ) {
+			// Construir la ruta jerárquica del término
+			$slugs = array();
+			$current = $term;
+			while ( $current ) {
+				array_unshift( $slugs, $current->slug );
+				if ( $current->parent ) {
+					$current = get_term( $current->parent, 'categoria_anuncio' );
+				} else {
+					break;
+				}
+			}
+			$path = implode( '/', $slugs );
+
+			// Reemplazar la URL base de WordPress por nuestra ruta limpia
+			$url = home_url( user_trailingslashit( $path, 'category' ) );
+		}
+		return $url;
 	}
 }
