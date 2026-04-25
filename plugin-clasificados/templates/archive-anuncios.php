@@ -76,6 +76,20 @@ get_header(); ?>
 								}
 							}
 
+							// Si es mascota, mostrar resumen rápido
+							if ( has_term( 'mascotas', 'categoria_anuncio' ) ) {
+								$raza = get_field( 'raza' );
+								$edad = get_field( 'edad' );
+
+								$detalles = array();
+								if ( $raza ) $detalles[] = $raza;
+								if ( $edad ) $detalles[] = $edad;
+
+								if ( !empty($detalles) ) {
+									echo '<p style="margin:0 0 10px 0;">' . esc_html( implode( ' • ', $detalles ) ) . '</p>';
+								}
+							}
+
 							// Mostrar extracto corto
 							echo wp_trim_words( get_the_excerpt(), 15, '...' );
 							?>

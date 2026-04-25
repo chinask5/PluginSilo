@@ -93,6 +93,25 @@ get_header(); ?>
 					<?php
 						endif;
 					endif;
+
+					// Detalles específicos de Mascotas
+					if ( has_term( 'mascotas', 'categoria_anuncio' ) ) :
+						$raza = get_field( 'raza' );
+						$edad = get_field( 'edad' );
+
+						// Verificar si al menos un campo existe antes de renderizar la caja
+						if ( $raza || $edad ) :
+					?>
+						<div class="detalles-mascota" style="background: #fff3e0; padding: 20px; border-radius: 5px; margin: 30px 0; border: 1px solid #ffe0b2;">
+							<h3 style="margin-top: 0; border-bottom: 2px solid #ffcc80; padding-bottom: 10px; color: #e65100;">Datos de la Mascota</h3>
+							<ul style="list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; color: #5d4037;">
+								<?php if ( $raza ) : ?><li><strong>Raza:</strong> <?php echo esc_html( $raza ); ?></li><?php endif; ?>
+								<?php if ( $edad ) : ?><li><strong>Edad:</strong> <?php echo esc_html( $edad ); ?></li><?php endif; ?>
+							</ul>
+						</div>
+					<?php
+						endif;
+					endif;
 					?>
 
 				</div><!-- .entry-content -->
